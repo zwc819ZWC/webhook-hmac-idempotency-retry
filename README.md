@@ -1,3 +1,29 @@
+## Status
+
+**Current version: v0.1** (HMAC verification + replay protection)
+
+### ✅ Implemented
+
+- **HMAC-SHA256 signature verification** (`app/hmac_verify.py`)
+  - Constant-time comparison to prevent timing attacks
+  - Timestamp-based replay protection (5-minute window by default)
+  - Graceful handling of malformed timestamps
+- **Unit tests** (`tests/test_hmac_verify.py`)
+  - 4 test cases: valid / tampered body / expired timestamp / malformed timestamp
+  - All passing locally (`pytest tests/ -v`)
+
+### 🚧 In progress (v0.2)
+
+- Idempotency check using event_id
+- Webhook receiver endpoint with FastAPI
+- Database schema for event log
+
+### 📋 Planned (v1.0)
+
+- Exponential backoff retry queue
+- Background worker
+- End-to-end integration tests
+
 # Webhook Receiver with HMAC + Idempotency + Retry
 
 A production-grade webhook receiver that demonstrates the three patterns most commonly missed in webhook integrations:
