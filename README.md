@@ -8,15 +8,19 @@
   - Constant-time comparison to prevent timing attacks
   - Timestamp-based replay protection (5-minute window by default)
   - Graceful handling of malformed timestamps
-- **Unit tests** (`tests/test_hmac_verify.py`)
-  - 4 test cases: valid / tampered body / expired timestamp / malformed timestamp
-  - All passing locally (`pytest tests/ -v`)
+  - 4 unit tests passing
 
-### 🚧 In progress (v0.2)
+- **Idempotency store using SQLite** (`app/idempotency.py`)        ← 新增
+  - PRIMARY KEY on event_id for concurrency safety
+  - get/save/cleanup_old API
+  - In-memory mode for tests, file-based for production demo
+  - 5 unit tests passing
 
-- Idempotency check using event_id
-- Webhook receiver endpoint with FastAPI
-- Database schema for event log
+### 🚧 In progress (v1.0 by 2026-06-19)
+
+- Webhook receiver endpoint (FastAPI) wiring HMAC + Idempotency
+- Exponential backoff retry queue + background worker
+- End-to-end integration tests
 
 ### 📋 Planned (v1.0)
 
