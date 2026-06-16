@@ -1,6 +1,6 @@
 ## Status
 
-**Current version: v0.1** (HMAC verification + replay protection)
+**Current version: v0.3** (HMAC + Idempotency + Retry Queue)
 
 ### ✅ Implemented
 
@@ -10,22 +10,29 @@
   - Graceful handling of malformed timestamps
   - 4 unit tests passing
 
-- **Idempotency store using SQLite** (`app/idempotency.py`)        ← 新增
+- **Idempotency store using SQLite** (`app/idempotency.py`)
   - PRIMARY KEY on event_id for concurrency safety
   - get/save/cleanup_old API
   - In-memory mode for tests, file-based for production demo
   - 5 unit tests passing
 
+- **Retry queue with exponential backoff** (`app/retry_queue.py`)
+  - PRIMARY KEY on event_id prevents duplicate enqueue (mirrors idempotency design)
+  - Exponential backoff: 60s → 120s → 240s → ... capped at 1 hour
+  - Dead-letter queue (DLQ): records flip to `FAILED_PERMANENTLY` after `max_retries` failures (default 5), preserved for audit and manual replay
+  - API: `enqueue` / `claim_due_retries` / `mark_succeeded` / `mark_failed` / `cleanup_old`
+  - Timezone-aware UTC datetimes (no `datetime.utcnow()` deprecation)
+  - 5 unit tests passing
+
 ### 🚧 In progress (v1.0 by 2026-06-19)
 
-- Webhook receiver endpoint (FastAPI) wiring HMAC + Idempotency
-- Exponential backoff retry queue + background worker
+- Background worker scanning retry queue
+- FastAPI receiver endpoint wiring HMAC + Idempotency + Retry
 - End-to-end integration tests
 
 ### 📋 Planned (v1.0)
 
-- Exponential backoff retry queue
-- Background worker
+- Background worker scanning retry queue
 - End-to-end integration tests
 
 # Webhook Receiver with HMAC + Idempotency + Retry
