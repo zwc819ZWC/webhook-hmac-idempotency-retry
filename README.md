@@ -1,6 +1,6 @@
 ## Status
 
-**Current version: v0.3** (HMAC + Idempotency + Retry Queue)
+**Current version: v0.4** (HMAC + Idempotency + Retry Queue + Retry Worker)
 
 ### ✅ Implemented
 
@@ -24,16 +24,21 @@
   - Timezone-aware UTC datetimes (no `datetime.utcnow()` deprecation)
   - 5 unit tests passing
 
+- **Retry worker** (`app/retry_worker.py`)
+  - Active scanner: claims due retries, replays each via an injected `delivery_fn`, reports outcome back to the store
+  - Separation of concerns: worker never computes backoff or decides DLQ — the store owns retry policy; the worker only calls `mark_succeeded` / `mark_failed`
+  - Per-record exception isolation: one failing delivery does not block the rest of the batch
+  - `run_once()` (testable single tick) + `run_forever(interval, max_ticks)`
+  - 6 tests passing, including an end-to-end fail→fail→succeed pipeline test
+
 ### 🚧 In progress (v1.0 by 2026-06-19)
 
-- Background worker scanning retry queue
-- FastAPI receiver endpoint wiring HMAC + Idempotency + Retry
-- End-to-end integration tests
+- FastAPI receiver endpoint wiring HMAC + Idempotency + Retry (the only remaining v1.0 piece)
 
-### 📋 Planned (v1.0)
+### ✅ Done toward v1.0
 
-- Background worker scanning retry queue
-- End-to-end integration tests
+- Background worker scanning retry queue (v0.4)
+- End-to-end integration tests (v0.4)
 
 # Webhook Receiver with HMAC + Idempotency + Retry
 
@@ -78,10 +83,10 @@ Most webhook tutorials skip the three things that actually break in production. 
 
 ### 3. Retry with exponential backoff
 
-- Schedule: 1s → 2s → 4s → 8s → 16s → ... up to max 1 hour
-- Max attempts: 8
-- Persistence: failed events stored, retried by background worker
-- **Tradeoff**: Aggressive retry vs downstream overload
+- Schedule: 60s → 120s → 240s → 480s → ... capped at 1 hour (`compute_backoff`)
+- Max attempts: `max_retries` (default 5); on exhaustion the record flips to `FAILED_PERMANENTLY` (DLQ) for audit / manual replay
+- Persistence: failed events stored in SQLite, retried by the background worker (`RetryWorker`)
+- **Tradeoff**: aggressive retry vs downstream overload; production would add jitter to avoid thundering-herd on downstream recovery
 
 ## How to run
 
